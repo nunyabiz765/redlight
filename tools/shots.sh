@@ -3,15 +3,15 @@
 # Plaza's tools/shots.sh). The app runs --muted: the engine and clock run, so
 # the playhead moves, but every sample sent to the speakers is silence.
 cd "$(dirname "$0")/.."
-EXE=${BACKROOM_EXE:-target/release/backroom}
+EXE=${REDLIGHT_EXE:-target/release/redlight}
 OUT=${1:-docs/screenshots}; mkdir -p "$OUT"
 N=79
-export BACKROOM_DATA=$(mktemp -d)  # keep test clicks out of the real song folder
+export REDLIGHT_DATA=$(mktemp -d)  # keep test clicks out of the real song folder
 start() {
   Xvfb ":$N" -screen 0 "${1}x24" -nolisten tcp >/dev/null 2>&1 & XPID=$!
   sleep 0.7
   env -u WAYLAND_DISPLAY DISPLAY=":$N" XDG_SESSION_TYPE=x11 SLINT_BACKEND=winit-software \
-    "$EXE" --muted "${@:2}" >"/tmp/backroom-shot.log" 2>&1 & APID=$!
+    "$EXE" --muted "${@:2}" >"/tmp/redlight-shot.log" 2>&1 & APID=$!
   sleep 4
 }
 stop() { kill $APID $XPID 2>/dev/null; wait $APID $XPID 2>/dev/null; }

@@ -1,4 +1,4 @@
-//! Backroom: a synthesized drum machine inspired by classic early-80s analog
+//! Red Light: a synthesized drum machine inspired by classic early-80s analog
 //! drum machines.
 //!
 //! The library is the whole engine and is UI-free, so it can be tested and

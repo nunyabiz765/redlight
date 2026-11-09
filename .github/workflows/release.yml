@@ -1,4 +1,4 @@
-# Builds and tests Backroom on Linux and macOS. On a v* tag it uploads both to that tag's
+# Builds and tests Red Light on Linux and macOS. On a v* tag it uploads both to that tag's
 # GitHub release, creating a draft release if there isn't one yet (publish it by hand after
 # checking). Existing assets are never replaced: an upload with a name that is already there
 # fails instead. Pushes to main and workflow_dispatch run the same builds and tests and keep
@@ -41,15 +41,15 @@ jobs:
       - run: cargo build --release --locked
       - name: Smoke test (offline render, then the window on Xvfb, muted)
         run: |
-          B=target/release/backroom
+          B=target/release/redlight
           $B --version
-          export BACKROOM_DATA=$(mktemp -d)
+          export REDLIGHT_DATA=$(mktemp -d)
           $B --list
           $B --render warehouse smoke.wav --bars 2
           test "$(stat -c%s smoke.wav)" -gt 100000
           export SLINT_BACKEND=winit-software
           xvfb-run -a -s "-screen 0 1280x900x24" sh -c "$B --muted & P=\$!; sleep 10; kill -0 \$P && kill \$P"
-      - run: tools/package-linux.sh target/release/backroom dist
+      - run: tools/package-linux.sh target/release/redlight dist
       - uses: actions/upload-artifact@v7
         with: { name: dist-linux, path: dist/*, if-no-files-found: error }
 
@@ -67,12 +67,12 @@ jobs:
       - run: cargo build --release --locked --target x86_64-apple-darwin
       - name: Smoke test (offline render on both architectures, then the window, muted)
         run: |
-          B=target/aarch64-apple-darwin/release/backroom
+          B=target/aarch64-apple-darwin/release/redlight
           $B --version
-          export BACKROOM_DATA=$(mktemp -d)
+          export REDLIGHT_DATA=$(mktemp -d)
           $B --render warehouse smoke.wav --bars 2
           test "$(stat -f%z smoke.wav)" -gt 100000
-          arch -x86_64 target/x86_64-apple-darwin/release/backroom --render boom smoke-x86.wav --bars 2
+          arch -x86_64 target/x86_64-apple-darwin/release/redlight --render boom smoke-x86.wav --bars 2
           test "$(stat -f%z smoke-x86.wav)" -gt 100000
           $B --muted & P=$!
           sleep 12
@@ -82,8 +82,8 @@ jobs:
       - uses: actions/upload-artifact@v7
         with: { name: shot-macos, path: shots/*, if-no-files-found: warn }
       - run: |
-          tools/package-macos.sh target/aarch64-apple-darwin/release/backroom \
-            target/x86_64-apple-darwin/release/backroom dist
+          tools/package-macos.sh target/aarch64-apple-darwin/release/redlight \
+            target/x86_64-apple-darwin/release/redlight dist
       - uses: actions/upload-artifact@v7
         with: { name: dist-macos, path: dist/*, if-no-files-found: error }
 
@@ -103,7 +103,7 @@ jobs:
         with: { name: dist-linux, path: dist }
       - run: ls -la dist
       - name: Draft the release if the tag has none
-        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag --title "Backroom ${TAG#v}" --notes "Linux and macOS builds. Notes to follow."
+        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag --title "Red Light ${TAG#v}" --notes "Linux and macOS builds. Notes to follow."
       - name: Upload (fails rather than overwrite an existing asset)
         run: gh release upload "$TAG" dist/*
 

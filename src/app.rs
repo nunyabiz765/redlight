@@ -4,12 +4,12 @@
 
 use crate::audio::{self, send, Audio, Events, Shared};
 use crate::{AppWindow, KnobData, VoiceRow};
-use backroom::engine::Event;
-use backroom::pattern::{
+use redlight::engine::Event;
+use redlight::pattern::{
     Command, MasterParam, Slot, Song, State, VoiceId, VoiceParam, STEPS, SWING_MAX, SWING_MIN,
     TEMPO_MAX, TEMPO_MIN,
 };
-use backroom::storage;
+use redlight::storage;
 
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
@@ -204,7 +204,7 @@ pub fn run(
     let dir_label = storage::display_dir(&dir);
     ui.set_data_dir(dir_label.clone().into());
     ui.set_version(env!("CARGO_PKG_VERSION").into());
-    ui.on_open_source(|| open_external("https://github.com/nunyabiz765/backroom".as_ref()));
+    ui.on_open_source(|| open_external("https://github.com/nunyabiz765/redlight".as_ref()));
     if let Err(e) = storage::seed_demos(&dir) {
         ui.set_status_note(format!("Can't write demos to {}: {e}", dir.display()).into());
     }

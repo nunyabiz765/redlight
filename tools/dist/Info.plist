@@ -3,12 +3,12 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key><string>en</string>
-    <key>CFBundleExecutable</key><string>backroom</string>
-    <key>CFBundleIconFile</key><string>backroom</string>
-    <key>CFBundleIdentifier</key><string>dev.centerpointlabs.backroom</string>
+    <key>CFBundleExecutable</key><string>redlight</string>
+    <key>CFBundleIconFile</key><string>redlight</string>
+    <key>CFBundleIdentifier</key><string>dev.centerpointlabs.redlight</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>CFBundleName</key><string>Backroom</string>
-    <key>CFBundleDisplayName</key><string>Backroom</string>
+    <key>CFBundleName</key><string>Red Light</string>
+    <key>CFBundleDisplayName</key><string>Red Light</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>@VERSION@</string>
     <key>CFBundleVersion</key><string>@VERSION@</string>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<defs>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%">
+<stop offset="0%" stop-color="#e8492f" stop-opacity="0.55"/>
+<stop offset="100%" stop-color="#e8492f" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="lamp" cx="42%" cy="36%" r="70%">
+<stop offset="0%" stop-color="#ffb39c"/>
+<stop offset="35%" stop-color="#f05a3a"/>
+<stop offset="100%" stop-color="#a8261a"/>
+</radialGradient>
+<linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#2a241e"/>
+<stop offset="100%" stop-color="#16130f"/>
+</linearGradient>
+</defs>
+<rect x="8" y="8" width="240" height="240" rx="40" fill="url(#wood)"/>
+<rect x="8" y="8" width="240" height="240" rx="40" fill="none" stroke="#3a332b" stroke-width="4"/>
+<circle cx="128" cy="82" r="62" fill="url(#glow)"/>
+<rect x="84" y="56" width="88" height="52" rx="12" fill="#0e0c0a" stroke="#4a4036" stroke-width="3"/>
+<rect x="94" y="64" width="68" height="36" rx="8" fill="url(#lamp)"/>
+<rect x="100" y="68" width="34" height="6" rx="3" fill="#ffd9cc" opacity="0.55"/>
+<g fill="#2e2924">
+<rect x="40" y="140" width="38" height="30" rx="5"/><rect x="132" y="140" width="38" height="30" rx="5"/>
+<rect x="40" y="182" width="38" height="30" rx="5"/><rect x="132" y="182" width="38" height="30" rx="5"/><rect x="178" y="182" width="38" height="30" rx="5"/>
+</g>
+<g fill="#f3a53a">
+<rect x="86" y="140" width="38" height="30" rx="5"/><rect x="178" y="140" width="38" height="30" rx="5"/>
+<rect x="86" y="182" width="38" height="30" rx="5"/>
+</g>
+</svg>

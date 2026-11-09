@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=Backroom
+Name=Red Light
 GenericName=Drum Machine
 Comment=Synthesized drum machine inspired by classic early-80s analog drum machines
 Exec=@BIN@
-Icon=backroom
+Icon=redlight
 Terminal=false
 Categories=AudioVideo;Audio;Music;
 Keywords=drum;drums;drum machine;beat;sequencer;rhythm;
-StartupWMClass=backroom
+StartupWMClass=redlight

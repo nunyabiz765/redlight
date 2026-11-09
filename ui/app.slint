@@ -5,8 +5,8 @@ import { KnobData, VoiceRow, Knob, Key, Readout, Step } from "widgets.slint";
 export { KnobData, VoiceRow }
 
 export component AppWindow inherits Window {
-    title: "Backroom";
-    icon: @image-url("../assets/backroom-64.png");
+    title: "Red Light";
+    icon: @image-url("../assets/redlight-64.png");
     preferred-width: 1180px;
     preferred-height: 830px;
     min-width: 1120px;
@@ -34,8 +34,8 @@ export component AppWindow inherits Window {
     in property <string> status-audio;
     in property <string> status-note;
     in property <string> hint;
-    in property <string> data-dir: "~/.local/share/backroom";
-    in property <string> version: "0.1.0";
+    in property <string> data-dir: "~/.local/share/redlight";
+    in property <string> version: "0.1.1";
 
     callback toggle-step(int, int);
     callback toggle-accent(int);
@@ -112,18 +112,18 @@ export component AppWindow inherits Window {
                         HorizontalLayout {
                             spacing: 9px;
                             alignment: start;
-                            // The bulb.
+                            // The recording light: lit while playing.
                             Rectangle {
                                 width: 12px;
                                 height: 12px;
                                 y: 9px;
                                 border-radius: 6px;
-                                background: root.playing ? Theme.amber : #4a3a24;
-                                drop-shadow-blur: root.playing ? 10px : 0px;
-                                drop-shadow-color: Theme.amber;
+                                background: root.playing ? Theme.signal : #4a2620;
+                                drop-shadow-blur: root.playing ? 12px : 0px;
+                                drop-shadow-color: Theme.signal;
                             }
                             Text {
-                                text: "BACKROOM";
+                                text: "RED LIGHT";
                                 font-size: 26px;
                                 font-weight: 700;
                                 letter-spacing: 8px;
@@ -542,7 +542,7 @@ export component AppWindow inherits Window {
                 padding: 22px;
                 spacing: 12px;
                 Text {
-                    text: "BACKROOM " + root.version;
+                    text: "RED LIGHT " + root.version;
                     font-size: 20px;
                     font-weight: 700;
                     letter-spacing: 6px;

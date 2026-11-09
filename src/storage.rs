@@ -1,6 +1,10 @@
-//! Songs on disk: JSON files in `$XDG_DATA_HOME/backroom` (normally
-//! `~/.local/share/backroom`) on Linux, `~/Library/Application Support/Backroom`
-//! on macOS. `BACKROOM_DATA` overrides the folder.
+//! Songs on disk: JSON files in `$XDG_DATA_HOME/redlight` (normally
+//! `~/.local/share/redlight`) on Linux, `~/Library/Application Support/Red Light`
+//! on macOS. `REDLIGHT_DATA` (or the old `BACKROOM_DATA`) overrides the folder.
+//!
+//! 0.1.0 shipped as "Backroom" and kept songs in `.../backroom` (macOS:
+//! `.../Backroom`). The first time the new folder is missing, the old one's
+//! songs are copied across; the old folder is left as it was.
 
 use crate::demos;
 use crate::pattern::Song;
@@ -8,19 +12,61 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 pub fn data_dir() -> PathBuf {
-    if let Some(d) = std::env::var_os("BACKROOM_DATA") {
-        return PathBuf::from(d);
+    for var in ["REDLIGHT_DATA", "BACKROOM_DATA"] {
+        if let Some(d) = std::env::var_os(var) {
+            return PathBuf::from(d);
+        }
     }
+    let (dir, legacy) = default_dirs();
+    migrate_from(&legacy, &dir);
+    dir
+}
+
+/// (current folder, the folder 0.1.0 used).
+fn default_dirs() -> (PathBuf, PathBuf) {
     #[cfg(target_os = "macos")]
     if let Some(h) = std::env::var_os("HOME") {
-        return PathBuf::from(h).join("Library/Application Support/Backroom");
+        let base = PathBuf::from(h).join("Library/Application Support");
+        return (base.join("Red Light"), base.join("Backroom"));
     }
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))
         .unwrap_or_else(|| PathBuf::from("."));
-    base.join("backroom")
+    (base.join("redlight"), base.join("backroom"))
+}
+
+/// Copies the song files from `old` into `new` if `new` doesn't exist yet.
+/// Never deletes or overwrites anything; on any error the copy is abandoned
+/// and the new folder is removed again only if this call created it empty.
+pub fn migrate_from(old: &Path, new: &Path) -> bool {
+    if new.exists() || !old.is_dir() {
+        return false;
+    }
+    let files = list(old);
+    if files.is_empty() {
+        return false;
+    }
+    if std::fs::create_dir_all(new).is_err() {
+        return false;
+    }
+    let mut copied = 0;
+    for (stem, path) in &files {
+        let to = new.join(format!("{stem}.json"));
+        if !to.exists() && std::fs::copy(path, &to).is_ok() {
+            copied += 1;
+        }
+    }
+    if copied == 0 {
+        let _ = std::fs::remove_dir(new);
+        return false;
+    }
+    eprintln!(
+        "redlight: copied {copied} song(s) from {} (the old Backroom folder, left in place)",
+        old.display()
+    );
+    true
 }
 
 /// The song folder for display, with the home folder shortened to `~`.
@@ -110,7 +156,7 @@ mod tests {
 
     #[test]
     fn save_list_load_and_seed() {
-        let dir = std::env::temp_dir().join(format!("backroom-store-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redlight-store-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         seed_demos(&dir).unwrap();
         let files = list(&dir);
@@ -130,6 +176,30 @@ mod tests {
         seed_demos(&dir).unwrap();
         assert_eq!(load(&demo_path).unwrap().state.tempo, 77.0);
         std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn songs_move_over_from_the_old_folder() {
+        let root = std::env::temp_dir().join(format!("redlight-migrate-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let (old, new) = (root.join("backroom"), root.join("redlight"));
+        // Nothing to copy: no folder is created.
+        assert!(!migrate_from(&old, &new));
+        assert!(!new.exists());
+        seed_demos(&old).unwrap();
+        let mut mine = load(&list(&old)[0].1).unwrap();
+        mine.name = "Late Take".into();
+        let text = mine.to_json().replace("\"redlight-song\"", "\"backroom-song\"");
+        std::fs::write(old.join("late-take.json"), text).unwrap();
+        assert!(migrate_from(&old, &new));
+        assert_eq!(list(&new).len(), list(&old).len());
+        assert_eq!(load(&new.join("late-take.json")).unwrap().name, "Late Take");
+        // The old folder is untouched, and a second run changes nothing.
+        assert!(old.join("late-take.json").exists());
+        std::fs::write(new.join("late-take.json"), "edited").unwrap();
+        assert!(!migrate_from(&old, &new));
+        assert_eq!(std::fs::read_to_string(new.join("late-take.json")).unwrap(), "edited");
+        std::fs::remove_dir_all(root).ok();
     }
 
     #[test]

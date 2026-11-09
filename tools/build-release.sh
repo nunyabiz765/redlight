@@ -14,8 +14,8 @@ podman run --rm -v "$PWD:/src:ro" -v "$OUT:/out" docker.io/library/debian:12 bas
   rustc --version
   cd /src
   CARGO_TARGET_DIR=/tmp/target cargo build --release --locked
-  cp /tmp/target/release/backroom /out/backroom.bin
+  cp /tmp/target/release/redlight /out/redlight.bin
 '
 
-tools/package-linux.sh "$OUT/backroom.bin" "$OUT"
-rm "$OUT/backroom.bin"
+tools/package-linux.sh "$OUT/redlight.bin" "$OUT"
+rm "$OUT/redlight.bin"

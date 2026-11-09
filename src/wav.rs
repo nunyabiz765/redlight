@@ -77,7 +77,7 @@ pub fn read_file(path: &Path) -> io::Result<(u32, u16, Vec<f32>)> {
     let bad = || {
         io::Error::new(
             io::ErrorKind::InvalidData,
-            "not a 24-bit PCM WAV from backroom",
+            "not a 24-bit PCM WAV from redlight",
         )
     };
     if b.len() < 44 || &b[0..4] != b"RIFF" || &b[8..16] != b"WAVEfmt " || &b[36..40] != b"data" {
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn round_trip() {
-        let dir = std::env::temp_dir().join(format!("backroom-wav-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("redlight-wav-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("t.wav");
         let s: Vec<f32> = (0..2000).map(|i| ((i as f32) * 0.01).sin() * 0.9).collect();

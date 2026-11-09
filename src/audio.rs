@@ -3,7 +3,7 @@
 //! pipewire-pulse, falling back to ALSA. The callback owns the engine and the
 //! sequencer clock; nothing in it locks or allocates.
 
-use backroom::engine::{Engine, Event};
+use redlight::engine::{Engine, Event};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SampleFormat, SizedSample};
@@ -52,8 +52,8 @@ pub fn start(muted: bool) -> Result<Audio, String> {
     let format = supported.sample_format();
     let mut config: cpal::StreamConfig = supported.into();
     // 256 frames = 5.3 ms at 48 kHz, so clicking a voice name feels immediate.
-    // BACKROOM_BUFFER overrides; 0 means the server's default.
-    let want: u32 = std::env::var("BACKROOM_BUFFER")
+    // REDLIGHT_BUFFER overrides; 0 means the server's default.
+    let want: u32 = std::env::var("REDLIGHT_BUFFER")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(256);
@@ -74,7 +74,7 @@ pub fn start(muted: bool) -> Result<Audio, String> {
     let (stream, prod) = match attempt(&config) {
         Ok(s) => s,
         Err(e) if config.buffer_size != cpal::BufferSize::Default => {
-            eprintln!("backroom: {e}; retrying with the default buffer size");
+            eprintln!("redlight: {e}; retrying with the default buffer size");
             config.buffer_size = cpal::BufferSize::Default;
             attempt(&config)?
         }
@@ -174,7 +174,7 @@ where
         if e.kind() == cpal::ErrorKind::Xrun {
             err_shared.xruns.fetch_add(1, Relaxed);
         } else {
-            eprintln!("backroom: audio: {e}");
+            eprintln!("redlight: audio: {e}");
         }
     };
     device

@@ -26,7 +26,9 @@ pub const TEMPO_MIN: f32 = 60.0;
 pub const TEMPO_MAX: f32 = 180.0;
 pub const SWING_MIN: f32 = 0.50;
 pub const SWING_MAX: f32 = 0.75;
-pub const FORMAT: &str = "backroom-song";
+pub const FORMAT: &str = "redlight-song";
+/// What 0.1.0 wrote, when the app was still called Backroom. Read, never written.
+pub const LEGACY_FORMAT: &str = "backroom-song";
 pub const VERSION: u32 = 1;
 
 // ------------------------------------------------------------------ ids ---
@@ -488,12 +490,12 @@ impl Song {
     /// same range checks as the edit commands.
     pub fn from_json(text: &str) -> Result<Song, String> {
         let f: SongFile = serde_json::from_str(text).map_err(|e| e.to_string())?;
-        if f.format != FORMAT {
-            return Err(format!("not a Backroom song (format \"{}\")", f.format));
+        if f.format != FORMAT && f.format != LEGACY_FORMAT {
+            return Err(format!("not a Red Light song (format \"{}\")", f.format));
         }
         if f.version > VERSION {
             return Err(format!(
-                "song is format version {}, this Backroom reads up to {VERSION}",
+                "song is format version {}, this Red Light reads up to {VERSION}",
                 f.version
             ));
         }
@@ -836,7 +838,7 @@ mod tests {
     #[test]
     fn json_rejects_bad_files() {
         let good = sample_song().to_json();
-        assert!(Song::from_json(&good.replace("backroom-song", "something-else")).is_err());
+        assert!(Song::from_json(&good.replace("redlight-song", "something-else")).is_err());
         assert!(Song::from_json(&good.replace("\"tempo\": 93.5", "\"tempo\": 250.0")).is_err());
         assert!(Song::from_json(&good.replace("\"kick\": \"x...", "\"kik\": \"x...")).is_err());
         assert!(Song::from_json(&good.replace("x... ...x ..x. ....", "x... ...x ..x.")).is_err());
@@ -845,13 +847,22 @@ mod tests {
 
     #[test]
     fn json_fills_in_missing_voices_and_master() {
-        let text = r#"{"format":"backroom-song","version":1,"name":"min","tempo":120,"swing":0.5,
+        let text = r#"{"format":"redlight-song","version":1,"name":"min","tempo":120,"swing":0.5,
             "patterns":{"B":{"kick":"x... x... x... x..."}}}"#;
         let s = Song::from_json(text).unwrap();
         assert_eq!(s.state.patterns[1].tracks[0], 0x1111);
         assert!(s.state.patterns[0].is_empty());
         assert_eq!(s.state.voices[3], VoiceSettings::default());
         assert_eq!(s.state.master, Master::default());
+    }
+
+    #[test]
+    fn json_reads_songs_saved_by_0_1_0() {
+        let old = sample_song().to_json().replace("\"redlight-song\"", "\"backroom-song\"");
+        assert!(old.contains("backroom-song"));
+        assert_eq!(Song::from_json(&old).unwrap(), sample_song());
+        // Saving it again writes the current format.
+        assert!(Song::from_json(&old).unwrap().to_json().contains("\"redlight-song\""));
     }
 
     #[test]

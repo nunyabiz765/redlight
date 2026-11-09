@@ -1,17 +1,17 @@
 [package]
-name = "backroom"
-version = "0.1.0"
+name = "redlight"
+version = "0.1.1"
 edition = "2021"
 description = "A synthesized drum machine inspired by classic early-80s analog drum machines"
 license = "MIT OR Apache-2.0"
 publish = false
 
 [lib]
-name = "backroom"
+name = "redlight"
 path = "src/lib.rs"
 
 [[bin]]
-name = "backroom"
+name = "redlight"
 path = "src/main.rs"
 
 [dependencies]

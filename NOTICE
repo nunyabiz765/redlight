@@ -1,17 +1,17 @@
-Backroom
+Red Light
 Copyright (c) 2026 NICKSOSA.TECH LLC (Center Point Labs)
 Licensed under either of the Apache License, Version 2.0 (LICENSE-APACHE) or the MIT licence
-(LICENSE-MIT), at your option. That covers Backroom's own source code.
+(LICENSE-MIT), at your option. That covers Red Light's own source code.
 
-Backroom is built with Slint (https://slint.dev), Copyright SixtyFPS GmbH, used under the Slint
+Red Light is built with Slint (https://slint.dev), Copyright SixtyFPS GmbH, used under the Slint
 Royalty-free Desktop, Mobile, and Web Applications License, version 2.0 (a copy is in
-LICENSES/LicenseRef-Slint-Royalty-free-2.0.md). Slint is not covered by Backroom's MIT/Apache
+LICENSES/LicenseRef-Slint-Royalty-free-2.0.md). Slint is not covered by Red Light's MIT/Apache
 terms. As that license requires, the app shows the AboutSlint widget in its About dialog (the ABOUT
 button). If you distribute a modified build, keep that widget, or display the Slint attribution
 badge as section 2 of the license allows. Other Slint licensing options, including GPL-3.0-only,
 are described by Slint itself.
 
-Backroom embeds the Barlow and JetBrains Mono fonts, used under the SIL Open Font License 1.1
+Red Light embeds the Barlow and JetBrains Mono fonts, used under the SIL Open Font License 1.1
 (LICENSES/OFL-1.1-Barlow.txt, LICENSES/OFL-1.1-JetBrainsMono.txt).
 
 The reverb, tape stage and DSP building blocks come from Plaza (https://github.com/nunyabiz765/plaza),
@@ -20,6 +20,6 @@ by the same author under the same MIT OR Apache-2.0 terms.
 Release downloads also include THIRD-PARTY-LICENSES.txt, covering the Rust crates linked into the
 binary. tools/third-party-licenses.py regenerates it.
 
-Backroom's sounds are synthesized; it contains no samples. It is inspired by 80s analog drum
-machines in general. Backroom is not affiliated with or endorsed by any instrument maker, and no
+Red Light's sounds are synthesized; it contains no samples. It is inspired by 80s analog drum
+machines in general. Red Light is not affiliated with or endorsed by any instrument maker, and no
 instrument maker's trademarks are used in its name, voices or songs.

@@ -1,27 +1,27 @@
 mod app;
 mod audio;
 
-use backroom::demos;
-use backroom::engine::render_song;
-use backroom::pattern::{Slot, Song, VoiceId, VoiceSettings};
-use backroom::storage;
+use redlight::demos;
+use redlight::engine::render_song;
+use redlight::pattern::{Slot, Song, VoiceId, VoiceSettings};
+use redlight::storage;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 slint::include_modules!();
 
 const HELP: &str = "\
-Backroom: a synthesized drum machine inspired by classic early-80s analog drum machines
+Red Light: a synthesized drum machine inspired by classic early-80s analog drum machines
 
 USAGE
-  backroom [--song NAME|FILE] [--play] [--muted]   Open the machine
-  backroom --render SONG OUT.wav [options]         Render offline to a 24-bit WAV (no audio device)
-  backroom --list                                  List demos and saved songs
-  backroom --kit OUT.wav                           Render every voice once, in kit order
+  redlight [--song NAME|FILE] [--play] [--muted]   Open the machine
+  redlight --render SONG OUT.wav [options]         Render offline to a 24-bit WAV (no audio device)
+  redlight --list                                  List demos and saved songs
+  redlight --kit OUT.wav                           Render every voice once, in kit order
 
 SONG is a demo name (or a unique part of one: boom, electro, slow, warehouse),
-a saved song's name in the song folder (~/.local/share/backroom on Linux,
-~/Library/Application Support/Backroom on macOS), or a path to a .json file.
+a saved song's name in the song folder (~/.local/share/redlight on Linux,
+~/Library/Application Support/Red Light on macOS), or a path to a .json file.
 
 RENDER OPTIONS
   --bars N      How many bars (default: the song's arrangement, A A A B)
@@ -33,7 +33,7 @@ KEYS (in the window)
 ";
 
 fn die(msg: impl std::fmt::Display) -> ! {
-    eprintln!("backroom: {msg}");
+    eprintln!("redlight: {msg}");
     std::process::exit(2);
 }
 
@@ -96,7 +96,7 @@ fn main() {
                 println!("  {stem}");
             }
         }
-        Some("--version" | "-V") => println!("backroom {}", env!("CARGO_PKG_VERSION")),
+        Some("--version" | "-V") => println!("redlight {}", env!("CARGO_PKG_VERSION")),
         Some("--help" | "-h" | "help") => print!("{HELP}"),
         _ => {
             let (mut song, mut file, mut muted, mut play) = (None, None, false, false);
@@ -130,7 +130,7 @@ fn main() {
 
 fn render(args: &[String]) {
     let (Some(spec), Some(out)) = (args.first(), args.get(1)) else {
-        die("usage: backroom --render SONG OUT.wav [--bars N] [--rate N] [--tail S]");
+        die("usage: redlight --render SONG OUT.wav [--bars N] [--rate N] [--tail S]");
     };
     let (song, mut arr, _) = resolve(spec).unwrap_or_else(|e| die(e));
     let (mut rate, mut tail, mut bars) = (48_000u32, 2.0f32, None);
@@ -158,7 +158,7 @@ fn render(args: &[String]) {
     if let Some(parent) = out.parent().filter(|p| !p.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent).unwrap_or_else(|e| die(e));
     }
-    backroom::wav::write_file(&out, rate, 2, &samples).unwrap_or_else(|e| die(e));
+    redlight::wav::write_file(&out, rate, 2, &samples).unwrap_or_else(|e| die(e));
     report(
         &out,
         &samples,
@@ -186,8 +186,8 @@ fn report(out: &Path, samples: &[f32], rate: u32, took: f32, what: &str) {
 /// Every voice once at its default settings, accented, half a second apart
 /// (the kick gets two seconds of room): for judging the sounds on their own.
 fn kit(out: PathBuf) {
-    use backroom::engine::{Engine, Event};
-    use backroom::pattern::State;
+    use redlight::engine::{Engine, Event};
+    use redlight::pattern::State;
     let sr = 48_000u32;
     let mut st = State::default();
     st.voices = [VoiceSettings {
@@ -213,6 +213,6 @@ fn kit(out: PathBuf) {
         samples.extend_from_slice(&buf);
     }
     let took = t0.elapsed().as_secs_f32();
-    backroom::wav::write_file(&out, sr, 2, &samples).unwrap_or_else(|e| die(e));
+    redlight::wav::write_file(&out, sr, 2, &samples).unwrap_or_else(|e| die(e));
     report(&out, &samples, sr, took, "kit roll");
 }

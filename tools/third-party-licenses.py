@@ -17,7 +17,7 @@ for target in targets:
     tree = subprocess.check_output(
         ["cargo", "tree", "--locked", "-e", "normal", "--prefix", "none", "--target", target], text=True)
     seen |= {tuple(line.split()[:2]) for line in tree.splitlines() if line.strip()}
-seen = {key for key in seen if key[0] != "backroom"}
+seen = {key for key in seen if key[0] != "redlight"}
 
 out, missing = [], []
 for key in sorted(seen):
@@ -38,5 +38,5 @@ for key in sorted(seen):
             out.append(f"--- {name} ---\n{f.read().strip()}\n\n")
 
 with open(sys.argv[1] if len(sys.argv) > 1 else "THIRD-PARTY-LICENSES.txt", "w", encoding="utf-8") as f:
-    f.write("Third-party licenses for the Rust crates linked into Backroom.\n\n" + "".join(out))
+    f.write("Third-party licenses for the Rust crates linked into Red Light.\n\n" + "".join(out))
 print(f"{len(seen)} crates, {len(missing)} without a license file: {' '.join(missing)}")

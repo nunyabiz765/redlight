@@ -1,6 +1,6 @@
 //! Master effects lifted from Plaza (~/projects/plaza/src/fx.rs, same author,
 //! MIT OR Apache-2.0): the FDN reverb and the cassette tape stage, unchanged
-//! apart from dropping Plaza's chorus. Backroom drives them gentler (see engine.rs).
+//! apart from dropping Plaza's chorus. Red Light drives them gentler (see engine.rs).
 
 use crate::dsp::*;
 
