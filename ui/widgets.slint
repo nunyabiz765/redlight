@@ -1,0 +1,233 @@
+import { Theme } from "theme.slint";
+
+export struct KnobData {
+    pid: int,
+    label: string,
+    value: float,
+    display: string,
+}
+
+export struct VoiceRow {
+    label: string,
+    tone-label: string,
+    muted: bool,
+    steps: [bool],
+    knobs: [KnobData],
+}
+
+// Drag up/down or scroll to turn; double-click resets. The knob never edits
+// its own value: it reports, Rust applies the edit command and updates the model.
+// (Interaction model from Plaza's Knob; the look is Backroom's own.)
+export component Knob inherits Rectangle {
+    in property <KnobData> data;
+    in property <color> tint: Theme.amber;
+    in property <length> size: 26px;
+    in property <bool> show-label: false;
+    callback changed(int, float);
+    callback reset(int);
+    callback hovered(KnobData);
+    width: root.size + 18px;
+    height: root.show-label ? root.size + 34px : root.size + 14px;
+
+    property <float> start: 0;
+    property <angle> a: 135deg + 270deg * data.value;
+
+    face := Rectangle {
+        x: (parent.width - root.size) / 2;
+        y: 0px;
+        width: root.size;
+        height: root.size;
+        // Value arc around a dark cap.
+        Path {
+            width: parent.width;
+            height: parent.height;
+            viewbox-width: 100;
+            viewbox-height: 100;
+            stroke: Theme.line;
+            stroke-width: 3px;
+            MoveTo { x: 50 + 46 * cos(135deg); y: 50 + 46 * sin(135deg); }
+            ArcTo { x: 50 + 46 * cos(45deg); y: 50 + 46 * sin(45deg); radius-x: 46; radius-y: 46; large-arc: true; sweep: true; }
+        }
+        if data.value > 0.004: Path {
+            width: parent.width;
+            height: parent.height;
+            viewbox-width: 100;
+            viewbox-height: 100;
+            stroke: root.tint;
+            stroke-width: 3px;
+            MoveTo { x: 50 + 46 * cos(135deg); y: 50 + 46 * sin(135deg); }
+            ArcTo {
+                x: 50 + 46 * cos(root.a);
+                y: 50 + 46 * sin(root.a);
+                radius-x: 46;
+                radius-y: 46;
+                large-arc: data.value * 270 > 180;
+                sweep: true;
+            }
+        }
+        Rectangle {
+            x: parent.width * 0.18;
+            y: parent.height * 0.18;
+            width: parent.width * 0.64;
+            height: parent.height * 0.64;
+            border-radius: self.width / 2;
+            background: ta.pressed || ta.has-hover ? #3a332b : #2b2621;
+            border-width: 1px;
+            border-color: #4a4137;
+        }
+        // Pointer line.
+        Rectangle {
+            width: 3px;
+            height: 3px;
+            border-radius: 1.5px;
+            x: parent.width / 2 + parent.width * 0.2 * cos(root.a) - 1.5px;
+            y: parent.height / 2 + parent.height * 0.2 * sin(root.a) - 1.5px;
+            background: Theme.ink;
+        }
+    }
+    if root.show-label: Text {
+        y: root.size + 3px;
+        width: parent.width;
+        horizontal-alignment: center;
+        text: data.label;
+        font-family: Theme.font;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: Theme.soft;
+    }
+    Text {
+        y: root.show-label ? root.size + 18px : root.size + 1px;
+        width: parent.width;
+        horizontal-alignment: center;
+        text: data.display;
+        font-family: Theme.mono;
+        font-size: 9px;
+        color: ta.pressed ? root.tint : Theme.faint;
+    }
+
+    ta := TouchArea {
+        mouse-cursor: ns-resize;
+        changed has-hover => { if (self.has-hover) { root.hovered(data); } }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.start = data.value;
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.changed(data.pid, clamp(root.start + (self.pressed-y - self.mouse-y) / 150px, 0, 1));
+                root.hovered(data);
+            }
+        }
+        double-clicked => { root.reset(data.pid); }
+        scroll-event(e) => {
+            root.changed(data.pid, clamp(data.value + e.delta-y / 1500px, 0, 1));
+            accept
+        }
+    }
+}
+
+// A flat panel key. Never takes focus, so Space keeps working after a click.
+export component Key inherits Rectangle {
+    in property <string> text;
+    in property <bool> on;
+    in property <bool> dim;
+    in property <color> tint: Theme.amber;
+    in property <length> min-w: 0px;
+    in property <length> font-size: 12px;
+    callback clicked;
+    height: 28px;
+    min-width: max(root.min-w, label.preferred-width + 20px);
+    border-radius: 4px;
+    background: root.on ? root.tint : (ta.pressed ? #3d362e : (ta.has-hover ? #2f2a24 : Theme.panel-hi));
+    border-width: 1px;
+    border-color: root.on ? root.tint : Theme.line;
+    label := Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: root.font-size;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: root.on ? #1a1410 : (root.dim ? Theme.faint : Theme.ink);
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A small green-on-black readout you can drag or scroll to change.
+export component Readout inherits Rectangle {
+    in property <string> title;
+    in property <string> text;
+    in property <float> value;
+    in property <float> per-px: 0.25;
+    in property <float> per-notch: 1;
+    callback set(float);
+    callback nudge(float);
+    property <float> start;
+    width: 96px;
+    height: 46px;
+    border-radius: 4px;
+    background: Theme.lcd;
+    border-width: 1px;
+    border-color: rta.has-hover ? Theme.faint : Theme.line;
+    Text {
+        x: 7px;
+        y: 4px;
+        text: root.title;
+        font-family: Theme.font;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #5c7a5c;
+    }
+    Text {
+        x: 0px;
+        y: 14px;
+        width: parent.width - 8px;
+        horizontal-alignment: right;
+        text: root.text;
+        font-family: Theme.mono;
+        font-size: 22px;
+        color: Theme.lcd-ink;
+    }
+    rta := TouchArea {
+        mouse-cursor: ns-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { root.start = root.value; }
+        }
+        moved => {
+            if (self.pressed) {
+                root.set(root.start + (self.pressed-y - self.mouse-y) / 1px * root.per-px);
+            }
+        }
+        scroll-event(e) => {
+            root.nudge(e.delta-y > 0 ? root.per-notch : -root.per-notch);
+            accept
+        }
+    }
+}
+
+// One step button. Lit = amber (red on the accent row); the playhead column
+// gets a filament outline and a warmer plate.
+export component Step inherits Rectangle {
+    in property <bool> on;
+    in property <bool> here;
+    in property <bool> alt;
+    in property <bool> accent-row;
+    in property <bool> muted;
+    callback clicked;
+    width: 34px;
+    height: 30px;
+    border-radius: 3px;
+    property <color> lit: root.accent-row ? Theme.signal : Theme.amber;
+    background: root.on
+        ? (root.here ? Theme.amber-hot : (root.muted ? #6b5434 : root.lit))
+        : (root.here ? #3b342b : (root.alt ? Theme.cell-alt : Theme.cell));
+    border-width: root.here ? 2px : 1px;
+    border-color: root.here ? #e8d9b8 : (root.on ? root.lit.darker(20%) : #2e2a25);
+    drop-shadow-blur: root.on && !root.muted ? 8px : 0px;
+    drop-shadow-color: root.on ? root.lit.with-alpha(0.45) : transparent;
+    sta := TouchArea { clicked => { root.clicked(); } }
+}

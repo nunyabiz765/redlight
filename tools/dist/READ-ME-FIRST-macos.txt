@@ -1,0 +1,27 @@
+Backroom for macOS (Apple Silicon and Intel, macOS 11 or newer)
+
+Install: drag Backroom into the Applications folder.
+
+First launch: this build isn't signed or notarized by Apple, so macOS blocks the first open
+with "Backroom can't be opened because Apple cannot check it for malicious software" (or
+"Apple could not verify Backroom is free of malware").
+
+  macOS 14 and older: in Applications, right-click (or Control-click) Backroom, choose Open,
+  then click Open in the dialog.
+  macOS 15 and newer: double-click Backroom once and click Done. Then open System Settings >
+  Privacy & Security, scroll down to "Backroom was blocked", click Open Anyway, and confirm
+  with your password or Touch ID.
+
+macOS remembers the choice; after that Backroom opens normally.
+
+Turn your volume down before the first play: the kick has a lot of low end.
+
+Keys: Space play/stop, Esc stop, A-D or 1-4 pick a pattern slot, Up/Down tempo, Left/Right swing,
+Cmd-S save. Click a step to toggle it; click a voice name to hear it. Songs are JSON files in
+~/Library/Application Support/Backroom (OPEN > Open folder shows them in Finder).
+
+Command line: /Applications/Backroom.app/Contents/MacOS/backroom --help
+(for example --render to write a song to a WAV file without opening the window).
+
+Free and open source: https://github.com/nunyabiz765/backroom
+From Center Point Labs: https://centerpointlabs.dev

@@ -1,0 +1,125 @@
+# Builds and tests Backroom on Linux and macOS. On a v* tag it uploads both to that tag's
+# GitHub release, creating a draft release if there isn't one yet (publish it by hand after
+# checking). Existing assets are never replaced: an upload with a name that is already there
+# fails instead. Pushes to main and workflow_dispatch run the same builds and tests and keep
+# the results as workflow artifacts only.
+#
+# The macOS app is ad-hoc signed (not notarized), so Gatekeeper asks once on first open; see
+# tools/dist/READ-ME-FIRST-macos.txt. There is no Windows build yet.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    # Debian 12, so the binary asks for an older glibc than a rolling distro would give it.
+    container: debian:12
+    steps:
+      - name: System packages
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends build-essential pkg-config curl ca-certificates git \
+            python3 libasound2-dev libfontconfig1-dev libfreetype6-dev libxkbcommon-dev xvfb xauth \
+            libx11-6 libx11-xcb1 libxcursor1 libxrandr2 libxi6 libxkbcommon-x11-0
+      - uses: actions/checkout@v7
+      - name: Rust
+        run: |
+          curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: cargo test --release --locked
+      - run: cargo build --release --locked
+      - name: Smoke test (offline render, then the window on Xvfb, muted)
+        run: |
+          B=target/release/backroom
+          $B --version
+          export BACKROOM_DATA=$(mktemp -d)
+          $B --list
+          $B --render warehouse smoke.wav --bars 2
+          test "$(stat -c%s smoke.wav)" -gt 100000
+          export SLINT_BACKEND=winit-software
+          xvfb-run -a -s "-screen 0 1280x900x24" sh -c "$B --muted & P=\$!; sleep 10; kill -0 \$P && kill \$P"
+      - run: tools/package-linux.sh target/release/backroom dist
+      - uses: actions/upload-artifact@v7
+        with: { name: dist-linux, path: dist/*, if-no-files-found: error }
+
+  macos:
+    runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          rustup toolchain install stable --profile minimal && rustup default stable
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - run: cargo test --release --locked
+      - run: cargo build --release --locked --target aarch64-apple-darwin
+      - run: cargo build --release --locked --target x86_64-apple-darwin
+      - name: Smoke test (offline render on both architectures, then the window, muted)
+        run: |
+          B=target/aarch64-apple-darwin/release/backroom
+          $B --version
+          export BACKROOM_DATA=$(mktemp -d)
+          $B --render warehouse smoke.wav --bars 2
+          test "$(stat -f%z smoke.wav)" -gt 100000
+          arch -x86_64 target/x86_64-apple-darwin/release/backroom --render boom smoke-x86.wav --bars 2
+          test "$(stat -f%z smoke-x86.wav)" -gt 100000
+          $B --muted & P=$!
+          sleep 12
+          kill -0 $P
+          mkdir -p shots && (screencapture -x shots/macos-runner.png || true)
+          kill $P
+      - uses: actions/upload-artifact@v7
+        with: { name: shot-macos, path: shots/*, if-no-files-found: warn }
+      - run: |
+          tools/package-macos.sh target/aarch64-apple-darwin/release/backroom \
+            target/x86_64-apple-darwin/release/backroom dist
+      - uses: actions/upload-artifact@v7
+        with: { name: dist-macos, path: dist/*, if-no-files-found: error }
+
+  # Each platform uploads on its own, so a macOS failure doesn't hold back the Linux build.
+  release:
+    needs: [linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { name: dist-linux, path: dist }
+      - run: ls -la dist
+      - name: Draft the release if the tag has none
+        run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag --title "Backroom ${TAG#v}" --notes "Linux and macOS builds. Notes to follow."
+      - name: Upload (fails rather than overwrite an existing asset)
+        run: gh release upload "$TAG" dist/*
+
+  release-macos:
+    needs: [macos, release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with: { name: dist-macos, path: dist }
+      - run: ls -la dist
+      - name: Upload (fails rather than overwrite an existing asset)
+        run: gh release upload "$TAG" dist/*

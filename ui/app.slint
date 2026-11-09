@@ -1,0 +1,567 @@
+import { AboutSlint, Palette } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { KnobData, VoiceRow, Knob, Key, Readout, Step } from "widgets.slint";
+
+export { KnobData, VoiceRow }
+
+export component AppWindow inherits Window {
+    title: "Backroom";
+    icon: @image-url("../assets/backroom-64.png");
+    preferred-width: 1180px;
+    preferred-height: 830px;
+    min-width: 1120px;
+    min-height: 800px;
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    forward-focus: keys;
+    init => { Palette.color-scheme = ColorScheme.dark; }
+
+    in property <[VoiceRow]> rows;
+    in property <[bool]> accent;
+    in property <[KnobData]> master;
+    in property <int> playhead: -1;
+    in property <bool> playing;
+    in property <float> tempo;
+    in property <float> swing;
+    in property <int> slot;
+    in property <int> playing-slot;
+    in property <[bool]> slot-used: [false, false, false, false];
+    in property <int> copied: -1;
+    in property <string> song-name;
+    in property <string> song-file;
+    in property <[string]> files;
+    in property <float> level;
+    in property <string> status-audio;
+    in property <string> status-note;
+    in property <string> hint;
+    in property <string> data-dir: "~/.local/share/backroom";
+    in property <string> version: "0.1.0";
+
+    callback toggle-step(int, int);
+    callback toggle-accent(int);
+    callback toggle-mute(int);
+    callback audition(int);
+    callback vknob(int, float);
+    callback vknob-reset(int);
+    callback mknob(int, float);
+    callback mknob-reset(int);
+    callback hover-knob(KnobData);
+    callback set-tempo(float);
+    callback set-swing(float);
+    callback play-toggle();
+    callback stop();
+    callback select-slot(int);
+    callback copy-slot();
+    callback paste-slot();
+    callback clear-slot();
+    callback new-song();
+    callback refresh-files();
+    callback open-file(int);
+    callback save();
+    callback save-copy();
+    callback open-folder();
+    callback open-source();
+
+    property <[string]> letters: ["A", "B", "C", "D"];
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.modifiers.control || e.modifiers.meta || e.modifiers.alt) {
+                if (e.modifiers.control && (e.text == "s" || e.text == "S")) {
+                    root.save();
+                    return accept;
+                }
+                return reject;
+            }
+            if (e.text == " ") {
+                if (!e.repeat) { root.play-toggle(); }
+                return accept;
+            }
+            if (e.text == Key.Escape) { root.stop(); return accept; }
+            if (e.text == "1" || e.text == "a" || e.text == "A") { root.select-slot(0); return accept; }
+            if (e.text == "2" || e.text == "b" || e.text == "B") { root.select-slot(1); return accept; }
+            if (e.text == "3" || e.text == "c" || e.text == "C") { root.select-slot(2); return accept; }
+            if (e.text == "4" || e.text == "d" || e.text == "D") { root.select-slot(3); return accept; }
+            if (e.text == "+" || e.text == "=" || e.text == Key.UpArrow) { root.set-tempo(root.tempo + 1); return accept; }
+            if (e.text == "-" || e.text == Key.DownArrow) { root.set-tempo(root.tempo - 1); return accept; }
+            if (e.text == Key.RightArrow) { root.set-swing(root.swing + 1); return accept; }
+            if (e.text == Key.LeftArrow) { root.set-swing(root.swing - 1); return accept; }
+            reject
+        }
+
+        VerticalLayout {
+            padding: 0px;
+            spacing: 0px;
+
+            // ---------------------------------------------------------- header
+            Rectangle {
+                height: 78px;
+                background: Theme.plate;
+                Rectangle { y: parent.height - 1px; height: 1px; background: #000; }
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 16px;
+                    padding-top: 14px;
+                    padding-bottom: 14px;
+                    spacing: 18px;
+
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 0px;
+                        min-width: 230px;
+                        HorizontalLayout {
+                            spacing: 9px;
+                            alignment: start;
+                            // The bulb.
+                            Rectangle {
+                                width: 12px;
+                                height: 12px;
+                                y: 9px;
+                                border-radius: 6px;
+                                background: root.playing ? Theme.amber : #4a3a24;
+                                drop-shadow-blur: root.playing ? 10px : 0px;
+                                drop-shadow-color: Theme.amber;
+                            }
+                            Text {
+                                text: "BACKROOM";
+                                font-size: 26px;
+                                font-weight: 700;
+                                letter-spacing: 8px;
+                                color: Theme.ink;
+                            }
+                        }
+                        Text {
+                            text: "DRUM SYNTH  ·  11 VOICES  ·  NO SAMPLES";
+                            font-size: 9px;
+                            font-weight: 600;
+                            letter-spacing: 2px;
+                            color: Theme.soft;
+                        }
+                    }
+
+                    // Transport.
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Key {
+                            text: root.playing ? "■  STOP" : "▶  PLAY";
+                            on: root.playing;
+                            min-w: 104px;
+                            height: 46px;
+                            font-size: 14px;
+                            clicked => { root.play-toggle(); keys.focus(); }
+                        }
+                        Readout {
+                            title: "TEMPO";
+                            text: round(root.tempo);
+                            value: root.tempo;
+                            per-px: 0.25;
+                            set(v) => { root.set-tempo(round(v)); }
+                            nudge(d) => { root.set-tempo(root.tempo + d); }
+                        }
+                        Readout {
+                            title: "SWING";
+                            text: round(root.swing) + "%";
+                            value: root.swing;
+                            per-px: 0.1;
+                            set(v) => { root.set-swing(round(v)); }
+                            nudge(d) => { root.set-swing(root.swing + d); }
+                        }
+                    }
+
+                    // Pattern slots.
+                    HorizontalLayout {
+                        spacing: 5px;
+                        alignment: center;
+                        VerticalLayout {
+                            alignment: center;
+                            Text { text: "PATTERN"; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: Theme.soft; }
+                        }
+                        for l[i] in root.letters: VerticalLayout {
+                            spacing: 3px;
+                            alignment: center;
+                            Key {
+                                text: l;
+                                min-w: 34px;
+                                height: 34px;
+                                font-size: 15px;
+                                on: i == root.slot;
+                                dim: !root.slot-used[i] && i != root.slot;
+                                clicked => { root.select-slot(i); keys.focus(); }
+                            }
+                            // Lit under the slot that's actually sounding (switches wait for the bar).
+                            Rectangle {
+                                height: 3px;
+                                border-radius: 1.5px;
+                                background: root.playing && i == root.playing-slot ? Theme.sage : (i == root.copied ? Theme.signal : transparent);
+                            }
+                        }
+                        Rectangle { width: 6px; }
+                        VerticalLayout {
+                            alignment: center;
+                            HorizontalLayout {
+                                spacing: 5px;
+                                Key { text: "COPY"; on: root.copied >= 0; tint: Theme.signal; clicked => { root.copy-slot(); keys.focus(); } }
+                                Key { text: "PASTE"; dim: root.copied < 0; clicked => { root.paste-slot(); keys.focus(); } }
+                                Key { text: "CLEAR"; clicked => { root.clear-slot(); keys.focus(); } }
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            // ---------------------------------------------------------- song bar
+            Rectangle {
+                height: 40px;
+                background: #171512;
+                Rectangle { y: parent.height - 1px; height: 1px; background: Theme.line; }
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 16px;
+                    padding-top: 6px;
+                    padding-bottom: 6px;
+                    spacing: 10px;
+                    Text {
+                        text: "SONG";
+                        font-size: 9px;
+                        font-weight: 700;
+                        letter-spacing: 2px;
+                        color: Theme.soft;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: root.song-name;
+                        font-size: 15px;
+                        font-weight: 700;
+                        letter-spacing: 1px;
+                        color: Theme.amber;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: root.song-file != "" ? root.song-file + ".json" : "not saved yet";
+                        font-family: Theme.mono;
+                        font-size: 10px;
+                        color: Theme.faint;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        overflow: elide;
+                    }
+                    Key { text: "NEW"; clicked => { root.new-song(); keys.focus(); } }
+                    Key { text: "OPEN ▾"; clicked => { root.refresh-files(); menu.show(); } }
+                    Key { text: "SAVE"; clicked => { root.save(); keys.focus(); } }
+                    Key { text: "SAVE COPY"; clicked => { root.save-copy(); keys.focus(); } }
+                    Key { text: "ABOUT"; clicked => { about.show(); } }
+                }
+            }
+
+            // ---------------------------------------------------------- grid
+            Rectangle {
+                vertical-stretch: 1;
+                background: Theme.panel;
+                VerticalLayout {
+                    padding-left: 20px;
+                    padding-right: 16px;
+                    padding-top: 12px;
+                    padding-bottom: 8px;
+                    spacing: 4px;
+
+                    // Column header: step numbers + knob titles.
+                    HorizontalLayout {
+                        spacing: 6px;
+                        height: 18px;
+                        Rectangle { width: 108px; }
+                        Rectangle { width: 26px; }
+                        Rectangle {
+                            width: 16 * 38px + 3 * 8px;
+                            for i in 16: Text {
+                                x: i * 38px + floor(i / 4) * 8px;
+                                width: 34px;
+                                text: i + 1;
+                                horizontal-alignment: center;
+                                font-family: Theme.mono;
+                                font-size: 10px;
+                                color: i == root.playhead ? Theme.amber-hot : (mod(i, 4) == 0 ? Theme.soft : Theme.faint);
+                            }
+                        }
+                        Rectangle { width: 10px; }
+                        for t in ["TUNE", "DECAY", "LEVEL", "TONE"]: Text {
+                            width: 44px;
+                            text: t;
+                            horizontal-alignment: center;
+                            font-size: 9px;
+                            font-weight: 700;
+                            letter-spacing: 1.5px;
+                            color: Theme.soft;
+                        }
+                    }
+
+                    // Accent row.
+                    HorizontalLayout {
+                        spacing: 6px;
+                        height: 34px;
+                        Rectangle {
+                            width: 108px;
+                            Text {
+                                x: 8px;
+                                text: "ACCENT";
+                                font-size: 13px;
+                                font-weight: 700;
+                                letter-spacing: 2px;
+                                color: Theme.signal;
+                                vertical-alignment: center;
+                                height: parent.height;
+                            }
+                        }
+                        Rectangle { width: 26px; }
+                        Rectangle {
+                            width: 16 * 38px + 3 * 8px;
+                            for on[i] in root.accent: Step {
+                                x: i * 38px + floor(i / 4) * 8px;
+                                y: 2px;
+                                on: on;
+                                accent-row: true;
+                                here: i == root.playhead;
+                                alt: mod(floor(i / 4), 2) == 1;
+                                clicked => { root.toggle-accent(i); }
+                            }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                    }
+                    Rectangle { height: 1px; background: Theme.line; }
+
+                    for row[ri] in root.rows: HorizontalLayout {
+                        spacing: 6px;
+                        height: 42px;
+                        // Voice name: click to hear it.
+                        Rectangle {
+                            width: 108px;
+                            height: 34px;
+                            y: 2px;
+                            border-radius: 3px;
+                            background: nta.pressed ? #3d362e : (nta.has-hover ? Theme.panel-hi : transparent);
+                            Text {
+                                x: 8px;
+                                text: row.label;
+                                font-size: 13px;
+                                font-weight: 700;
+                                letter-spacing: 1.5px;
+                                color: row.muted ? Theme.faint : Theme.ink;
+                                vertical-alignment: center;
+                                height: parent.height;
+                            }
+                            nta := TouchArea { clicked => { root.audition(ri); } }
+                        }
+                        Key {
+                            text: "M";
+                            width: 26px;
+                            min-w: 26px;
+                            y: 5px;
+                            on: row.muted;
+                            tint: Theme.signal;
+                            clicked => { root.toggle-mute(ri); }
+                        }
+                        Rectangle {
+                            width: 16 * 38px + 3 * 8px;
+                            for on[i] in row.steps: Step {
+                                x: i * 38px + floor(i / 4) * 8px;
+                                y: 4px;
+                                on: on;
+                                muted: row.muted;
+                                here: i == root.playhead;
+                                alt: mod(floor(i / 4), 2) == 1;
+                                clicked => { root.toggle-step(ri, i); }
+                            }
+                        }
+                        Rectangle { width: 10px; }
+                        for k in row.knobs: Knob {
+                            data: k;
+                            size: 26px;
+                            tint: row.muted ? Theme.faint : Theme.amber;
+                            changed(pid, v) => { root.vknob(pid, v); }
+                            reset(pid) => { root.vknob-reset(pid); }
+                            hovered(d) => { root.hover-knob(d); }
+                        }
+                        Text {
+                            text: row.tone-label;
+                            font-size: 9px;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                            color: Theme.faint;
+                            vertical-alignment: center;
+                            width: 50px;
+                        }
+                    }
+                }
+            }
+
+            // ---------------------------------------------------------- master
+            Rectangle {
+                height: 92px;
+                background: Theme.plate;
+                Rectangle { y: 0px; height: 1px; background: #000; }
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    padding-top: 10px;
+                    spacing: 6px;
+                    VerticalLayout {
+                        width: 108px;
+                        alignment: start;
+                        padding-top: 4px;
+                        Text { text: "MASTER"; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: Theme.ink; }
+                        Text { text: "TAPE  ·  ROOM  ·  CLIP"; font-size: 9px; letter-spacing: 1px; color: Theme.soft; }
+                    }
+                    for k in root.master: Knob {
+                        data: k;
+                        size: 34px;
+                        show-label: true;
+                        tint: Theme.sage;
+                        changed(pid, v) => { root.mknob(pid, v); }
+                        reset(pid) => { root.mknob-reset(pid); }
+                        hovered(d) => { root.hover-knob(d); }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    // Output meter.
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 6px;
+                        padding-top: 6px;
+                        width: 220px;
+                        Text { text: "OUT"; font-size: 9px; font-weight: 700; letter-spacing: 2px; color: Theme.soft; }
+                        Rectangle {
+                            height: 10px;
+                            border-radius: 2px;
+                            background: Theme.lcd;
+                            clip: true;
+                            Rectangle {
+                                x: 0px;
+                                width: parent.width * min(1, root.level / 0.95);
+                                background: root.level > 0.9 ? Theme.signal : Theme.lcd-ink;
+                            }
+                        }
+                        Text {
+                            text: root.hint;
+                            font-family: Theme.mono;
+                            font-size: 10px;
+                            color: Theme.soft;
+                            overflow: elide;
+                        }
+                    }
+                }
+            }
+
+            // ---------------------------------------------------------- status
+            Rectangle {
+                height: 26px;
+                background: #0c0b0a;
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 18px;
+                    Text { text: root.status-audio; font-family: Theme.mono; font-size: 10px; color: Theme.faint; vertical-alignment: center; }
+                    Text { text: root.status-note; font-family: Theme.mono; font-size: 10px; color: Theme.soft; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                    Text {
+                        text: "Space play/stop  ·  A–D pattern  ·  ↑↓ tempo  ·  ←→ swing  ·  click a voice name to hear it  ·  Ctrl+S save";
+                        font-size: 11px;
+                        color: Theme.faint;
+                        vertical-alignment: center;
+                        horizontal-alignment: right;
+                    }
+                }
+            }
+        }
+    }
+
+    menu := PopupWindow {
+        x: root.width - 336px;
+        y: 116px;
+        width: 320px;
+        Rectangle {
+            background: Theme.panel-hi;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: Theme.line;
+            drop-shadow-blur: 16px;
+            drop-shadow-color: #000000aa;
+            VerticalLayout {
+                padding: 6px;
+                Text {
+                    text: root.data-dir;
+                    font-family: Theme.mono;
+                    font-size: 10px;
+                    color: Theme.faint;
+                    height: 20px;
+                    vertical-alignment: center;
+                }
+                for name[i] in root.files: Rectangle {
+                    height: 28px;
+                    border-radius: 4px;
+                    background: name == root.song-file ? Theme.amber : (ita.has-hover ? #3a332b : transparent);
+                    Text {
+                        x: 10px;
+                        text: name;
+                        font-family: Theme.mono;
+                        font-size: 12px;
+                        color: name == root.song-file ? #1a1410 : Theme.ink;
+                        vertical-alignment: center;
+                        height: parent.height;
+                    }
+                    ita := TouchArea { clicked => { root.open-file(i); keys.focus(); } }
+                }
+                Rectangle {
+                    height: 28px;
+                    border-radius: 4px;
+                    background: fta.has-hover ? #3a332b : transparent;
+                    Text {
+                        x: 10px;
+                        text: "Open folder ↗";
+                        font-size: 12px;
+                        color: Theme.soft;
+                        vertical-alignment: center;
+                        height: parent.height;
+                    }
+                    fta := TouchArea { clicked => { root.open-folder(); keys.focus(); } }
+                }
+            }
+        }
+    }
+    about := PopupWindow {
+        x: (root.width - 440px) / 2;
+        y: (root.height - 380px) / 2;
+        width: 440px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.panel-hi;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.line;
+            drop-shadow-blur: 18px;
+            drop-shadow-color: #000000aa;
+            VerticalLayout {
+                padding: 22px;
+                spacing: 12px;
+                Text {
+                    text: "BACKROOM " + root.version;
+                    font-size: 20px;
+                    font-weight: 700;
+                    letter-spacing: 6px;
+                    color: Theme.ink;
+                }
+                Text {
+                    text: "A synthesized drum machine inspired by 80s analog drum machines. Free and open source, MIT OR Apache-2.0. Center Point Labs by nicksosa.tech LLC.";
+                    font-size: 13px;
+                    color: Theme.soft;
+                    wrap: word-wrap;
+                }
+                AboutSlint { }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    Key { text: "SOURCE CODE ↗"; clicked => { root.open-source(); } }
+                    Key { text: "CLOSE"; on: true; clicked => { about.close(); keys.focus(); } }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,29 @@
+// Bundled so the app looks the same everywhere (SIL OFL 1.1, see LICENSES/).
+import "../assets/fonts/Barlow-Regular.ttf";
+import "../assets/fonts/Barlow-SemiBold.ttf";
+import "../assets/fonts/Barlow-Bold.ttf";
+import "../assets/fonts/JetBrainsMono-Regular.ttf";
+
+// A dim back room: smoked-walnut panels, bone-coloured legends, and one warm
+// amber bulb. Lit steps glow amber, accents glow signal-red, the playhead is
+// a pale filament line.
+export global Theme {
+    out property <color> bg: #12100e;
+    out property <color> panel: #1b1815;
+    out property <color> panel-hi: #24201c;
+    out property <color> line: #342f29;
+    out property <color> ink: #ece0c8;
+    out property <color> soft: #a09380;
+    out property <color> faint: #5f574c;
+    out property <color> amber: #f3a53a;
+    out property <color> amber-hot: #ffe2a8;
+    out property <color> signal: #e8492f;
+    out property <color> sage: #86b59a;
+    out property <color> cell: #201d19;
+    out property <color> cell-alt: #2a2621;
+    out property <color> lcd: #0b0d0a;
+    out property <color> lcd-ink: #9fe0a0;
+    out property <brush> plate: @linear-gradient(180deg, #2a241e 0%, #1a1714 100%);
+    out property <string> font: "Barlow";
+    out property <string> mono: "JetBrains Mono";
+}
