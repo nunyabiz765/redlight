@@ -1,3 +1,6 @@
+<p align="center"><img src="docs/redlight-hero.jpg" width="100%" alt="A glowing red RECORDING sign above a studio booth door in a dark, wood-panelled hallway."></p>
+<p align="center"><sub>Art: AI-generated.</sub></p>
+
 # Red Light
 
 A free, open-source desktop drum machine for Linux and macOS, inspired by 80s analog drum machines: eleven voices, all synthesized from oscillators, noise and filters, with no samples. There's a 16-step sequencer with four pattern slots and swing, and a master chain with tape grit, reverb and a soft clipper. It's a sibling of [Plaza](https://github.com/nunyabiz765/plaza), the 80s-style polysynth, built the same way: Rust, a Slint UI, and cpal audio. The name is the red recording light over a studio booth door.
